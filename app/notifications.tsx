@@ -23,7 +23,7 @@ export default function NotificationsScreen() {
           <View style={styles.optionsList}>
             <View style={styles.optionRow}>
               <View style={styles.optionIcon}>
-                <Ionicons name="truck" size={18} color="#C49A6C" />
+                <Ionicons name="car-outline" size={18} color="#C49A6C" />
               </View>
               <View style={styles.optionText}>
                 <Text style={styles.optionTitle}>Order Updates</Text>
