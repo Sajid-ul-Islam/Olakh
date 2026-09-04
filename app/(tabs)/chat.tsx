@@ -1,39 +1,81 @@
-import { View, Text, StyleSheet, Pressable, ScrollView } from 'react-native';
+import { View, Text, Image, StyleSheet, Pressable, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+
+const suggestions = ['Size guide', 'Track order', 'Exchange policy', 'Style advice'];
 
 export default function ChatScreen() {
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top']}>
+      {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Olakh Assistant</Text>
-        <View style={styles.onlineIndicator} />
+        <Pressable onPress={() => router.back()} style={styles.backBtn}>
+          <Ionicons name="arrow-back" size={22} color="#1a1a1a" />
+        </Pressable>
+        <View style={styles.headerCenter}>
+          <View style={styles.avatar}>
+            <Ionicons name="chatbubble-ellipses" size={16} color="#fff" />
+          </View>
+          <View style={styles.headerText}>
+            <Text style={styles.headerTitle}>Olakh Assistant</Text>
+            <View style={styles.onlineRow}>
+              <View style={styles.onlineDot} />
+              <Text style={styles.onlineText}>Online</Text>
+            </View>
+          </View>
+        </View>
+        <View style={styles.placeholder} />
       </View>
 
-      <ScrollView contentContainerStyle={styles.messages}>
-        <View style={styles.bubbleAi}>
-          <Text style={styles.bubbleAiText}>
-            Hi! Welcome to Olakh. I can help with sizing, recommendations, and orders.
-          </Text>
-        </View>
+      {/* Messages */}
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={styles.keyboardView}
+      >
+        <ScrollView style={styles.messagesScroll} contentContainerStyle={styles.messages} showsVerticalScrollIndicator={false}>
+          {/* AI message with avatar */}
+          <View style={styles.messageRow}>
+            <View style={styles.aiAvatar}>
+              <Ionicons name="chatbubble-ellipses" size={18} color="#fff" />
+            </View>
+            <View style={styles.bubbleGroup}>
+              <View style={styles.bubble}>
+                <Text style={styles.bubbleText}>
+                  Hi! Welcome to Olakh. I can help with sizing, recommendations, and orders.
+                </Text>
+              </View>
+              <Text style={styles.timeText}>Just now</Text>
+            </View>
+          </View>
 
-        <View style={styles.suggestions}>
-          {['Size guide', 'Track order', 'Exchange policy', 'Style advice'].map((s) => (
-            <Pressable key={s} style={styles.suggestion}>
-              <Text style={styles.suggestionText}>{s}</Text>
-            </Pressable>
-          ))}
-        </View>
-      </ScrollView>
+          {/* Suggestions */}
+          <View style={styles.suggestionsSection}>
+            <Text style={styles.suggestionsLabel}>Quick questions</Text>
+            <View style={styles.suggestionsRow}>
+              {suggestions.map((s) => (
+                <Pressable key={s} style={styles.suggestion} onPress={() => {}}>
+                  <Text style={styles.suggestionText}>{s}</Text>
+                </Pressable>
+              ))}
+            </View>
+          </View>
+        </ScrollView>
 
-      <View style={styles.inputRow}>
-        <Pressable style={styles.input}>
-          <Text style={styles.inputPlaceholder}>Type a message...</Text>
-        </Pressable>
-        <Pressable style={styles.send}>
-          <Ionicons name="send" size={20} color="#fff" />
-        </Pressable>
-      </View>
+        {/* Input bar */}
+        <View style={styles.inputBar}>
+          <Pressable style={styles.input}>
+            <Ionicons name="chatbubble-outline" size={20} color="#999" style={styles.inputIcon} />
+            <Text style={styles.inputPlaceholder}>Type a message...</Text>
+          </Pressable>
+          <Pressable style={styles.attachBtn}>
+            <Ionicons name="attach-outline" size={20} color="#999" />
+          </Pressable>
+          <Pressable style={styles.sendBtn}>
+            <Ionicons name="send" size={20} color="#fff" />
+          </Pressable>
+        </View>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
@@ -41,18 +83,114 @@ export default function ChatScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#fafafa' },
   header: {
-    flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 16, gap: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    backgroundColor: '#fff',
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
   },
-  headerTitle: { fontSize: 18, fontWeight: '700', color: '#1a1a1a' },
-  onlineIndicator: { width: 8, height: 8, borderRadius: 4, backgroundColor: '#2ecc71' },
-  messages: { padding: 20, gap: 12 },
-  bubbleAi: { backgroundColor: '#fff', padding: 14, borderRadius: 18, borderBottomLeftRadius: 4, maxWidth: '85%' },
-  bubbleAiText: { fontSize: 14, color: '#1a1a1a', lineHeight: 20 },
-  suggestions: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 8 },
-  suggestion: { backgroundColor: '#fff', paddingHorizontal: 14, paddingVertical: 10, borderRadius: 20, borderWidth: 1, borderColor: '#eee' },
-  suggestionText: { fontSize: 13, color: '#666' },
-  inputRow: { flexDirection: 'row', padding: 12, gap: 10, borderTopWidth: 1, borderTopColor: '#eee', backgroundColor: '#fff' },
-  input: { flex: 1, backgroundColor: '#f5f5f5', borderRadius: 24, paddingHorizontal: 16, paddingVertical: 10, justifyContent: 'center' },
-  inputPlaceholder: { color: '#999', fontSize: 14 },
-  send: { width: 44, height: 44, borderRadius: 22, backgroundColor: '#1a1a1a', alignItems: 'center', justifyContent: 'center' },
+  backBtn: { padding: 4, marginRight: 4 },
+  headerCenter: { flex: 1, flexDirection: 'row', alignItems: 'center' },
+  avatar: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    backgroundColor: '#C49A6C',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  headerText: { justifyContent: 'center' },
+  headerTitle: { fontSize: 15, fontWeight: '700', color: '#1a1a1a' },
+  onlineRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 2 },
+  onlineDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: '#2ecc71' },
+  onlineText: { fontSize: 11, color: '#2ecc71', fontWeight: '600' },
+  placeholder: { width: 32 },
+  keyboardView: { flex: 1 },
+  messagesScroll: { flex: 1 },
+  messages: { padding: 16, paddingBottom: 8 },
+  messageRow: { flexDirection: 'row', marginBottom: 16 },
+  aiAvatar: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#C49A6C',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 10,
+    flexShrink: 0,
+  },
+  bubbleGroup: { flex: 1, alignItems: 'flex-start' },
+  bubble: {
+    backgroundColor: '#fff',
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: 16,
+    borderBottomLeftRadius: 4,
+    borderWidth: 1,
+    borderColor: '#eee',
+    maxWidth: '85%',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.04,
+    shadowRadius: 2,
+    elevation: 1,
+  },
+  bubbleText: { fontSize: 14, color: '#1a1a1a', lineHeight: 20 },
+  timeText: { fontSize: 10, color: '#bbb', marginTop: 4, marginLeft: 2 },
+  suggestionsSection: { marginBottom: 8 },
+  suggestionsLabel: { fontSize: 11, fontWeight: '600', color: '#999', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8 },
+  suggestionsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  suggestion: {
+    backgroundColor: '#fff',
+    paddingHorizontal: 14,
+    paddingVertical: 9,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: '#eee',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.04,
+    shadowRadius: 2,
+    elevation: 1,
+  },
+  suggestionText: { fontSize: 12, color: '#666', fontWeight: '500' },
+  inputBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    backgroundColor: '#fff',
+    borderTopWidth: 1,
+    borderTopColor: '#f0f0f0',
+  },
+  input: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#f5f5f5',
+    borderRadius: 24,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    gap: 8,
+  },
+  inputIcon: { marginRight: 4 },
+  inputPlaceholder: { color: '#999', fontSize: 14, flex: 1 },
+  attachBtn: { padding: 8, marginRight: 4 },
+  sendBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#1a1a1a',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginLeft: 4,
+  },
 });
