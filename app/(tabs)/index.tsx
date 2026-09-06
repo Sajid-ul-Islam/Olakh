@@ -1,12 +1,16 @@
+import { useEffect, useState } from 'react';
 import { View, Text, Image, StyleSheet, Pressable, ScrollView, useWindowDimensions } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { products } from '../../services/products';
 import { shopifyImage } from '../../services/images';
 import ProductCard from '../../components/ProductCard';
-import Animated, { FadeInDown, FadeInUp, FadeInLeft, ZoomIn } from 'react-native-reanimated';
+import Animated, { FadeInDown, FadeInUp, FadeInLeft, ZoomIn, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
+
+const HERO_SLIDE_MS = 5000;
+const HERO_FADE_MS = 900;
 
 const categories = [
   { id: 'bras' as const, name: 'Bras', image: 'https://cdn.shopify.com/s/files/1/0963/2078/2629/files/00_ParnaBalconette.jpg?v=1771694387' },
@@ -16,51 +20,101 @@ const categories = [
 ];
 
 const heroImages = [
-  // Real Olakh editorial shots from the store's Shopify CDN
+  // On-model editorial shots from the store's Shopify CDN
   'https://cdn.shopify.com/s/files/1/0963/2078/2629/files/01_ParnaBodysuit.jpg?v=1771698424',
   'https://cdn.shopify.com/s/files/1/0963/2078/2629/files/02_ParnaBalconette.jpg?v=1771694386',
   'https://cdn.shopify.com/s/files/1/0963/2078/2629/files/03_ParnaCorset.jpg?v=1771694989',
 ];
 
+/** One stacked hero photo that crossfades in/out as `active` flips. */
+function HeroSlide({ uri, active, height }: { uri: string; active: boolean; height: number }) {
+  const opacity = useSharedValue(active ? 1 : 0);
+
+  useEffect(() => {
+    opacity.value = withTiming(active ? 1 : 0, { duration: HERO_FADE_MS });
+  }, [active, opacity]);
+
+  const animatedStyle = useAnimatedStyle(() => ({ opacity: opacity.value }));
+
+  return (
+    <Animated.Image
+      source={{ uri: shopifyImage(uri, { width: 1200 }) }}
+      style={[styles.heroSlide, { height }, animatedStyle]}
+    />
+  );
+}
+
 export default function HomeScreen() {
   const { width } = useWindowDimensions();
+  const insets = useSafeAreaInsets();
   const horizontalPadding = Math.max(16, Math.min(24, width * 0.05));
   const heroHeight = Math.min(400, Math.max(300, width * 0.55));
   const categoryCardSize = Math.min(100, Math.max(76, width * 0.18));
   const productCardWidth = (width - horizontalPadding * 2 - 12) / 2;
   const isLargeScreen = width > 768;
+  const [heroIndex, setHeroIndex] = useState(0);
+  const fullHeroHeight = heroHeight + insets.top;
+
+  // Auto-advance the hero; each render of HeroSlide covers its own crossfade.
+  useEffect(() => {
+    const t = setInterval(() => {
+      setHeroIndex((i) => (i + 1) % heroImages.length);
+    }, HERO_SLIDE_MS);
+    return () => clearInterval(t);
+  }, []);
+
+  // Warm the CDN cache for every hero shot at display size so fades never pop in blank.
+  useEffect(() => {
+    heroImages.forEach((u) => Image.prefetch(shopifyImage(u, { width: 1200 })));
+  }, []);
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <View style={styles.container}>
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
-      {/* Top bar */}
-      <Animated.View entering={FadeInDown.delay(100).duration(500)} style={[styles.topBar, { paddingHorizontal: horizontalPadding }]}>
-        <Pressable onPress={() => router.push('/(tabs)/account')} style={styles.brandBtn}>
-          <Text style={[styles.brand, { fontSize: isLargeScreen ? 32 : 28 }]}>Olakh</Text>
-        </Pressable>
-        <View style={styles.iconRow}>
-          <Pressable onPress={() => router.push('/wishlist')} style={styles.iconBtn}>
-            <Ionicons name="heart-outline" size={22} color="#C49A6C" />
-          </Pressable>
-          <Pressable onPress={() => router.push('/notifications')} style={styles.iconBtn}>
-            <Ionicons name="notifications-outline" size={22} color="#C49A6C" />
-          </Pressable>
-        </View>
-      </Animated.View>
-
-      {/* Hero */}
-      <Animated.View entering={FadeInDown.delay(200).duration(600)} style={[styles.hero, { height: heroHeight, marginHorizontal: horizontalPadding }]}>
+      {/* Full-bleed hero reaching the very top of the screen */}
+      <Animated.View entering={FadeInDown.delay(200).duration(600)} style={[styles.hero, { height: fullHeroHeight }]}>
         <Pressable onPress={() => router.push('/(tabs)/shop')}>
-          <Image
-            source={{ uri: shopifyImage(heroImages[0], { width: 1200 }) }}
-            style={[styles.heroImage, { height: heroHeight }]}
+          {/* stacked on-model shots, crossfading */}
+          {heroImages.map((uri, i) => (
+            <HeroSlide key={uri} uri={uri} active={i === heroIndex} height={fullHeroHeight} />
+          ))}
+          {/* soft white veil under the status bar so its icons stay legible */}
+          <LinearGradient
+            colors={['rgba(255,255,255,0.9)', 'rgba(255,255,255,0.35)', 'rgba(255,255,255,0)']}
+            style={styles.heroTopScrim}
+            start={{ x: 0.5, y: 0 }}
+            end={{ x: 0.5, y: 1 }}
           />
+          {/* darkening at the bottom for the headline */}
           <LinearGradient
             colors={['rgba(0,0,0,0.5)', 'rgba(0,0,0,0.2)', 'rgba(0,0,0,0.0)']}
             style={styles.heroGradient}
             start={{ x: 0.5, y: 1 }}
             end={{ x: 0.5, y: 0 }}
           />
+          {/* top bar overlaid on the photo, below the status bar */}
+          <Animated.View
+            entering={FadeInDown.delay(100).duration(500)}
+            style={[styles.topBar, { top: insets.top, paddingHorizontal: horizontalPadding }]}
+          >
+            <Pressable onPress={() => router.push('/(tabs)/account')} style={styles.brandBtn}>
+              <Text style={[styles.brand, { fontSize: isLargeScreen ? 32 : 28 }]}>Olakh</Text>
+            </Pressable>
+            <View style={styles.iconRow}>
+              <Pressable onPress={() => router.push('/wishlist')} style={styles.iconBtn}>
+                <Ionicons name="heart-outline" size={22} color="#C49A6C" />
+              </Pressable>
+              <Pressable onPress={() => router.push('/notifications')} style={styles.iconBtn}>
+                <Ionicons name="notifications-outline" size={22} color="#C49A6C" />
+              </Pressable>
+            </View>
+          </Animated.View>
+          {/* hero progress dots */}
+          <View style={styles.heroDots} pointerEvents="none">
+            {heroImages.map((uri, i) => (
+              <View key={uri} style={[styles.heroDot, i === heroIndex && styles.heroDotActive]} />
+            ))}
+          </View>
           <View style={[styles.heroContent, { left: horizontalPadding, right: horizontalPadding }]}>
             <Animated.View entering={ZoomIn.delay(400).duration(500)} style={styles.heroBadge}>
               <Ionicons name="sparkles" size={12} color="#fff" />
@@ -129,7 +183,7 @@ export default function HomeScreen() {
         </Text>
       </Animated.View>
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 }
 
@@ -137,20 +191,51 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#fafafa' },
   scrollContent: { paddingBottom: 24 },
   topBar: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingTop: 18,
-    paddingBottom: 12,
+    paddingTop: 6,
+    paddingBottom: 6,
   },
   brandBtn: { padding: 0 },
   brand: { fontWeight: '800', letterSpacing: 1, color: '#1a1a1a' },
   iconRow: { flexDirection: 'row', gap: 14 },
   iconBtn: { padding: 4 },
   hero: {
-    borderRadius: 20,
     overflow: 'hidden',
     marginBottom: 24,
+  },
+  heroSlide: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    width: '100%',
+  },
+  heroDots: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 96,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 6,
+  },
+  heroDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: 'rgba(255,255,255,0.5)',
+  },
+  heroDotActive: { backgroundColor: '#fff', width: 18 },
+  heroTopScrim: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 110,
   },
   heroImage: { width: '100%', height: '100%' },
   heroGradient: {

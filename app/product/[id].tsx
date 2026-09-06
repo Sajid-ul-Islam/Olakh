@@ -1,11 +1,12 @@
-import { View, Text, StyleSheet, Pressable, Image, ScrollView, useWindowDimensions } from 'react-native';
-import { useState } from 'react';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { View, Text, StyleSheet, Pressable, Image, ScrollView, FlatList, useWindowDimensions, NativeSyntheticEvent, NativeScrollEvent } from 'react-native';
+import { useState, useEffect, useRef } from 'react';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { products } from '../../services/products';
 import { shopifyImage } from '../../services/images';
+import ProductCard from '../../components/ProductCard';
 import { useShop } from '../../context/ShopContext';
 import Animated, {
   FadeInDown,
@@ -20,15 +21,28 @@ import Animated, {
 export default function ProductDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { width } = useWindowDimensions();
+  const insets = useSafeAreaInsets();
   const horizontalPadding = Math.max(16, Math.min(24, width * 0.05));
-  const imageSectionHeight = Math.min(420, Math.max(340, width * 0.6));
+  const imageSectionHeight = Math.min(420, Math.max(340, width * 0.6)) + insets.top;
   const isLargeScreen = width > 768;
 
   const product = products.find((p) => p.id === id);
   const [activeImage, setActiveImage] = useState(0);
   const [selectedSize, setSelectedSize] = useState<string | null>(null);
+  const relatedCardWidth = Math.min(170, Math.max(140, width * 0.36));
+  const relatedProducts = product
+    ? products.filter((p) => p.category === product.category && p.id !== product.id)
+    : [];
   const { addToCart, toggleWishlist, isWishlisted, showToast } = useShop();
   const wishlisted = product ? isWishlisted(product.id) : false;
+  const pagerRef = useRef<FlatList<string>>(null);
+
+  // Reset per-product UI state when navigating to another product from the related rail.
+  useEffect(() => {
+    setActiveImage(0);
+    setSelectedSize(null);
+    pagerRef.current?.scrollToOffset({ offset: 0, animated: false });
+  }, [id]);
 
   const handleAddToCart = () => {
     if (!product) return;
@@ -69,24 +83,55 @@ export default function ProductDetail() {
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
-      {/* Image section with shared element transition */}
+      {/* Image section: swipeable gallery of every product shot */}
       <View style={[styles.imageSection, { height: imageSectionHeight }]}>
-        <Animated.Image
-          sharedTransitionTag={`product-image-${product.id}`}
-          source={{ uri: shopifyImage(product.images?.[activeImage] || product.image, { width: 1200 }) }}
-          style={styles.image}
+        <FlatList
+          ref={pagerRef}
+          data={product.images}
+          keyExtractor={(uri, i) => `${uri}-${i}`}
+          horizontal
+          pagingEnabled
+          showsHorizontalScrollIndicator={false}
+          getItemLayout={(_, index) => ({ length: width, offset: width * index, index })}
+          onMomentumScrollEnd={(e: NativeSyntheticEvent<NativeScrollEvent>) => {
+            const idx = Math.round(e.nativeEvent.contentOffset.x / width);
+            if (idx !== activeImage && idx >= 0 && idx < product.images.length) {
+              setActiveImage(idx);
+            }
+          }}
+          renderItem={({ item }) => (
+            <Image
+              source={{ uri: shopifyImage(item, { width: 1200 }) }}
+              style={[styles.image, { width }]}
+            />
+          )}
         />
-        {(product.images?.length ?? 0) > 1 && (
-          <View style={[styles.thumbRow, { paddingHorizontal: horizontalPadding }]}>
-            {product.images.map((uri, index) => (
-              <Pressable key={uri} onPress={() => setActiveImage(index)}>
-                <Image
-                  source={{ uri: shopifyImage(uri, { width: 160, height: 200, crop: true }) }}
-                  style={[styles.thumb, index === activeImage && styles.thumbActive]}
+        {product.images.length > 1 && (
+          <>
+            {/* position dots */}
+            <View style={styles.dotsRow} pointerEvents="none">
+              {product.images.map((uri, index) => (
+                <View
+                  key={`${uri}-${index}`}
+                  style={[styles.dot, index === activeImage && styles.dotActive]}
                 />
-              </Pressable>
-            ))}
-          </View>
+              ))}
+            </View>
+            {/* tap-to-jump thumbnails */}
+            <View style={[styles.thumbRow, { paddingHorizontal: horizontalPadding }]}>
+              {product.images.map((uri, index) => (
+                <Pressable
+                  key={`${uri}-${index}`}
+                  onPress={() => pagerRef.current?.scrollToIndex({ index, animated: true })}
+                >
+                  <Image
+                    source={{ uri: shopifyImage(uri, { width: 160, height: 200, crop: true }) }}
+                    style={[styles.thumb, index === activeImage && styles.thumbActive]}
+                  />
+                </Pressable>
+              ))}
+            </View>
+          </>
         )}
         <LinearGradient
           colors={['rgba(0,0,0,0)', 'rgba(0,0,0,0.02)']}
@@ -96,7 +141,7 @@ export default function ProductDetail() {
         />
         <Animated.View
           entering={FadeInUp.delay(300).duration(500)}
-          style={[styles.topBar, { paddingHorizontal: horizontalPadding, top: horizontalPadding }]}
+          style={[styles.topBar, { paddingHorizontal: horizontalPadding, top: insets.top + 8 }]}
         >
           <Pressable onPress={() => router.back()} style={styles.backBtn}>
             <Ionicons name="arrow-back" size={22} color="#1a1a1a" />
@@ -199,6 +244,23 @@ export default function ProductDetail() {
           <Ionicons name="shield-checkmark" size={14} color="#2ecc71" />
           <Text style={styles.footerText}>Free shipping on orders above ₹999</Text>
         </Animated.View>
+
+        {relatedProducts.length > 0 && (
+          <View style={styles.relatedSection}>
+            <Text style={styles.relatedTitle}>You may also like</Text>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.relatedScroll}
+            >
+              {relatedProducts.map((rp, index) => (
+                <View key={rp.id} style={[styles.relatedCard, { width: relatedCardWidth }]}>
+                  <ProductCard product={rp} cardWidth={relatedCardWidth} />
+                </View>
+              ))}
+            </ScrollView>
+          </View>
+        )}
       </ScrollView>
     </SafeAreaView>
   );
@@ -220,6 +282,22 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 8,
   },
+  dotsRow: {
+    position: 'absolute',
+    top: 12,
+    left: 0,
+    right: 0,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 6,
+  },
+  dot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: 'rgba(255,255,255,0.55)',
+  },
+  dotActive: { backgroundColor: '#1a1a1a', width: 16 },
   thumb: {
     width: 44,
     height: 56,
@@ -290,6 +368,17 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 4,
   },
+  relatedSection: { marginTop: 28 },
+  relatedTitle: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#999',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    marginBottom: 12,
+  },
+  relatedScroll: { gap: 12, paddingBottom: 4 },
+  relatedCard: { flexShrink: 0 },
   addToCartText: { color: '#fff', fontSize: 15, fontWeight: '700', letterSpacing: 0.3 },
   footer: { flexDirection: 'row', alignItems: 'center', gap: 6, justifyContent: 'center' },
   footerText: { fontSize: 12, color: '#999' },

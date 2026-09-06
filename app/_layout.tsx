@@ -2,6 +2,7 @@ import { Stack } from 'expo-router';
 import { AuthProvider, useAuth } from '../context/AuthContext';
 import { ShopProvider } from '../context/ShopContext';
 import Toast from '../components/Toast';
+import AdaptiveStatusBar from '../components/AdaptiveStatusBar';
 import { ActivityIndicator, View, StyleSheet } from 'react-native';
 import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
 
@@ -39,6 +40,7 @@ export default function RootLayout() {
   return (
     <AuthProvider>
       <ShopProvider>
+        <AdaptiveStatusBar />
         <RootLayoutContent />
         <Toast />
       </ShopProvider>
