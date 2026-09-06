@@ -4,21 +4,22 @@ import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { products } from '../../services/products';
+import { shopifyImage } from '../../services/images';
 import ProductCard from '../../components/ProductCard';
 import Animated, { FadeInDown, FadeInUp, FadeInLeft, ZoomIn } from 'react-native-reanimated';
 
 const categories = [
-  { id: 'bras', name: 'Bras', image: 'https://images.unsplash.com/photo-1617331721458-bd3bd3f9c7e8?w=400&h=500&fit=crop' },
-  { id: 'bodysuits', name: 'Bodysuits', image: 'https://images.unsplash.com/photo-1596755094514-f87e34085aae?w=400&h=500&fit=crop' },
-  { id: 'bottoms', name: 'Bottoms', image: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=400&h=500&fit=crop' },
-  { id: 'loungewear', name: 'Loungewear', image: 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=400&h=500&fit=crop' },
-  { id: 'sleepwear', name: 'Sleepwear', image: 'https://images.unsplash.com/photo-1434389677669-e08b4cac3105?w=400&h=500&fit=crop' },
+  { id: 'bras' as const, name: 'Bras', image: 'https://cdn.shopify.com/s/files/1/0963/2078/2629/files/00_ParnaBalconette.jpg?v=1771694387' },
+  { id: 'bodysuits' as const, name: 'Bodysuits', image: 'https://cdn.shopify.com/s/files/1/0963/2078/2629/files/00_ParnaBodysuit.jpg?v=1771698424' },
+  { id: 'bottoms' as const, name: 'Bottoms', image: 'https://cdn.shopify.com/s/files/1/0963/2078/2629/files/00_ParnaCheeky.jpg?v=1771697765' },
+  { id: 'corsets' as const, name: 'Corsets', image: 'https://cdn.shopify.com/s/files/1/0963/2078/2629/files/00_ParnaCorset.jpg?v=1771694989' },
 ];
 
 const heroImages = [
-  'https://images.unsplash.com/photo-1469334031218-e382a71b716b?w=800&h=1000&fit=crop',
-  'https://images.unsplash.com/photo-1496747611176-843222e1e57c?w=800&h=1000&fit=crop',
-  'https://images.unsplash.com/photo-1509631179647-0177331693ae?w=800&h=1000&fit=crop',
+  // Real Olakh editorial shots from the store's Shopify CDN
+  'https://cdn.shopify.com/s/files/1/0963/2078/2629/files/01_ParnaBodysuit.jpg?v=1771698424',
+  'https://cdn.shopify.com/s/files/1/0963/2078/2629/files/02_ParnaBalconette.jpg?v=1771694386',
+  'https://cdn.shopify.com/s/files/1/0963/2078/2629/files/03_ParnaCorset.jpg?v=1771694989',
 ];
 
 export default function HomeScreen() {
@@ -31,6 +32,7 @@ export default function HomeScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
       {/* Top bar */}
       <Animated.View entering={FadeInDown.delay(100).duration(500)} style={[styles.topBar, { paddingHorizontal: horizontalPadding }]}>
         <Pressable onPress={() => router.push('/(tabs)/account')} style={styles.brandBtn}>
@@ -50,7 +52,7 @@ export default function HomeScreen() {
       <Animated.View entering={FadeInDown.delay(200).duration(600)} style={[styles.hero, { height: heroHeight, marginHorizontal: horizontalPadding }]}>
         <Pressable onPress={() => router.push('/(tabs)/shop')}>
           <Image
-            source={{ uri: heroImages[0] }}
+            source={{ uri: shopifyImage(heroImages[0], { width: 1200 }) }}
             style={[styles.heroImage, { height: heroHeight }]}
           />
           <LinearGradient
@@ -96,7 +98,10 @@ export default function HomeScreen() {
               onPress={() => router.push({ pathname: '/(tabs)/shop', params: { category: cat.id } })}
               style={[styles.categoryInner, { width: categoryCardSize }]}
             >
-              <Image source={{ uri: cat.image }} style={[styles.categoryImage, { width: categoryCardSize, height: categoryCardSize * 1.2 }]} />
+              <Image
+                source={{ uri: shopifyImage(cat.image, { width: 360, height: 430, crop: true }) }}
+                style={[styles.categoryImage, { width: categoryCardSize, height: categoryCardSize * 1.2 }]}
+              />
               <Text style={[styles.categoryName, { width: categoryCardSize, fontSize: isLargeScreen ? 15 : 13 }]} numberOfLines={1}>
                 {cat.name}
               </Text>
@@ -123,12 +128,14 @@ export default function HomeScreen() {
           thoughtful design, and everyday comfort.
         </Text>
       </Animated.View>
+      </ScrollView>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#fafafa' },
+  scrollContent: { paddingBottom: 24 },
   topBar: {
     flexDirection: 'row',
     justifyContent: 'space-between',

@@ -1,4 +1,4 @@
-import { View, Text, Image, StyleSheet, Pressable, ScrollView, useWindowDimensions } from 'react-native';
+import { View, Text, Image, StyleSheet, Pressable, ScrollView, useWindowDimensions, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -20,6 +20,14 @@ export default function AccountScreen() {
   const avatarSize = Math.min(120, Math.max(90, width * 0.24));
   const isLargeScreen = width > 768;
 
+  const handleMenu = (id: string) => {
+    if (id === 'wishlist') {
+      router.push('/wishlist');
+      return;
+    }
+    Alert.alert('Coming soon', 'This section is on the roadmap.');
+  };
+
   const handleSignOut = async () => {
     await signOut();
     router.replace('/auth/login');
@@ -33,10 +41,15 @@ export default function AccountScreen() {
             entering={FadeInDown.delay(200).duration(600)}
             style={[styles.avatarWrapper, { width: avatarSize, height: avatarSize, borderRadius: avatarSize / 2 }]}
           >
-            <Image
-              source={{ uri: session?.user?.avatar || 'https://images.unsplash.com/photo-1583939333550-4c3b2b3e9b3a?w=400&h=400&fit=crop' }}
-              style={styles.avatarImage}
-            />
+            {session?.user?.avatar ? (
+              <Image source={{ uri: session.user.avatar }} style={styles.avatarImage} />
+            ) : (
+              <View style={styles.avatarInitials}>
+                <Text style={[styles.avatarInitialsText, { fontSize: avatarSize * 0.34 }]}>
+                  {(session?.user?.name || 'G').charAt(0).toUpperCase()}
+                </Text>
+              </View>
+            )}
           </Animated.View>
 
           <Animated.Text entering={FadeInDown.delay(400).duration(500)} style={[styles.greeting, { fontSize: isLargeScreen ? 16 : 13 }]}>
@@ -68,7 +81,7 @@ export default function AccountScreen() {
               key={item.id}
               entering={FadeInRight.delay(750 + index * 100).duration(500)}
             >
-              <Pressable style={styles.menuItem}>
+              <Pressable style={styles.menuItem} onPress={() => handleMenu(item.id)}>
                 <View style={styles.menuIconWrapper}>
                   <Ionicons name={item.icon} size={isLargeScreen ? 26 : 22} color={item.color} />
                 </View>
@@ -98,6 +111,13 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   avatarImage: { width: '100%', height: '100%' },
+  avatarInitials: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#1a1a1a',
+  },
+  avatarInitialsText: { color: '#fff', fontWeight: '700' },
   greeting: { color: '#666', marginBottom: 4, fontWeight: '500' },
   name: { fontWeight: '700', color: '#1a1a1a', marginBottom: 16 },
   signInBtn: {

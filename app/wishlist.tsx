@@ -2,12 +2,69 @@ import { View, Text, StyleSheet, Pressable, ScrollView, Image, useWindowDimensio
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import Animated, { FadeInDown } from 'react-native-reanimated';
+import { useShop } from '../context/ShopContext';
+import { shopifyImage } from '../services/images';
+import { Product } from '../types';
 
 export default function WishlistScreen() {
+  const { wishlist, toggleWishlist, addToCart, showToast } = useShop();
   const { width } = useWindowDimensions();
   const horizontalPadding = Math.max(16, Math.min(24, width * 0.05));
   const isLargeScreen = width > 768;
-  const imageHeight = Math.min(240, Math.max(200, width * 0.35));
+  const cardWidth = (width - horizontalPadding * 2 - 12) / 2;
+  const imageHeight = Math.min(190, Math.max(140, cardWidth * 1.6));
+
+  const moveToBag = (product: Product) => {
+    addToCart(product);
+    toggleWishlist(product);
+    showToast('Moved to bag');
+  };
+
+  if (wishlist.length === 0) {
+    return (
+      <SafeAreaView style={styles.container} edges={['top']}>
+        <View style={[styles.header, { paddingHorizontal: horizontalPadding }]}>
+          <Pressable onPress={() => router.back()} style={styles.backBtn}>
+            <Ionicons name="arrow-back" size={22} color="#1a1a1a" />
+          </Pressable>
+          <Text style={[styles.title, { fontSize: isLargeScreen ? 24 : 22 }]}>Wishlist</Text>
+          <View style={styles.placeholder} />
+        </View>
+
+        <ScrollView showsVerticalScrollIndicator={false}>
+          <View style={[styles.emptySection, { paddingHorizontal: horizontalPadding }]}>
+            <View style={[styles.emptyImageWrapper, { height: Math.min(240, Math.max(200, width * 0.35)) }]}>
+              <Image
+                source={{ uri: shopifyImage('https://cdn.shopify.com/s/files/1/0963/2078/2629/files/02_ParnaBalconette.jpg?v=1771694386', { width: 1000 }) }}
+                style={styles.emptyImage}
+              />
+              <View style={styles.emptyImageOverlay} />
+              <View style={styles.emptyImageInner}>
+                <View style={styles.emptyIconRow}>
+                  <Ionicons name="heart-outline" size={isLargeScreen ? 38 : 32} color="#fff" />
+                  <Text style={styles.emptyIconText}>Save your favorites</Text>
+                </View>
+              </View>
+            </View>
+
+            <View style={styles.emptyContent}>
+              <Text style={[styles.emptyTitle, { fontSize: isLargeScreen ? 24 : 20 }]}>Your wishlist is empty</Text>
+              <Text style={styles.emptySubtitle}>
+                Tap the heart on any piece to save it here.
+              </Text>
+              <Pressable
+                style={[styles.browseBtn, { paddingHorizontal: isLargeScreen ? 40 : 32 }]}
+                onPress={() => router.push('/(tabs)/shop')}
+              >
+                <Text style={styles.browseBtnText}>Browse Collection</Text>
+              </Pressable>
+            </View>
+          </View>
+        </ScrollView>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -15,58 +72,49 @@ export default function WishlistScreen() {
         <Pressable onPress={() => router.back()} style={styles.backBtn}>
           <Ionicons name="arrow-back" size={22} color="#1a1a1a" />
         </Pressable>
-        <Text style={[styles.title, { fontSize: isLargeScreen ? 24 : 22 }]}>Wishlist</Text>
+        <Text style={[styles.title, { fontSize: isLargeScreen ? 24 : 22 }]}>
+          Wishlist ({wishlist.length})
+        </Text>
         <View style={styles.placeholder} />
       </View>
 
-      <ScrollView showsVerticalScrollIndicator={false}>
-        <View style={[styles.emptySection, { paddingHorizontal: horizontalPadding }]}>
-          <View style={[styles.emptyImageWrapper, { height: imageHeight }]}>
-            <Image
-              source={{ uri: 'https://images.unsplash.com/photo-1596755094514-f87e34085aae?w=800&h=1000&fit=crop' }}
-              style={styles.emptyImage}
-            />
-            <View style={styles.emptyImageOverlay} />
-            <View style={styles.emptyImageInner}>
-              <View style={styles.emptyIconRow}>
-                <Ionicons name="heart-outline" size={isLargeScreen ? 38 : 32} color="#fff" />
-                <Text style={styles.emptyIconText}>Save your favorites</Text>
-              </View>
-            </View>
-          </View>
-
-          <View style={styles.emptyContent}>
-            <Text style={[styles.emptyTitle, { fontSize: isLargeScreen ? 24 : 20 }]}>Your wishlist is empty</Text>
-            <Text style={styles.emptySubtitle}>
-              Save pieces you love and we'll remind you when they're back in stock.
-            </Text>
-            <Pressable
-              style={[styles.browseBtn, { paddingHorizontal: isLargeScreen ? 40 : 32 }]}
-              onPress={() => router.push('/(tabs)/shop')}
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingHorizontal: horizontalPadding, paddingBottom: 32 }}
+      >
+        <View style={styles.grid}>
+          {wishlist.map((item, idx) => (
+            <Animated.View
+              key={item.product.id}
+              entering={FadeInDown.delay(idx * 60).duration(350)}
+              style={[styles.card, { width: cardWidth }]}
             >
-              <Text style={styles.browseBtnText}>Browse Collection</Text>
-            </Pressable>
-            <View style={styles.featuresRow}>
-              <View style={styles.feature}>
-                <View style={styles.featureIcon}>
-                  <Ionicons name="heart" size={14} color="#C49A6C" />
+              <Pressable onPress={() => router.push(`/product/${item.product.id}`)}>
+                <Image
+                  source={{ uri: shopifyImage(item.product.image, { width: 700 }) }}
+                  style={[styles.cardImage, { height: imageHeight }]}
+                />
+              </Pressable>
+              <View style={styles.cardInfo}>
+                <Text style={styles.cardName} numberOfLines={1}>{item.product.name}</Text>
+                <Text style={styles.cardPrice}>₹{item.product.price.toLocaleString('en-IN')}</Text>
+                <View style={styles.cardActions}>
+                  <Pressable style={styles.bagBtn} onPress={() => moveToBag(item.product)}>
+                    <Text style={styles.bagBtnText}>Move to Bag</Text>
+                  </Pressable>
+                  <Pressable
+                    style={styles.heartBtn}
+                    onPress={() => {
+                      toggleWishlist(item.product);
+                      showToast('Removed from wishlist');
+                    }}
+                  >
+                    <Ionicons name="heart" size={18} color="#C49A6C" />
+                  </Pressable>
                 </View>
-                <Text style={styles.featureText}>Save for later</Text>
               </View>
-              <View style={styles.feature}>
-                <View style={styles.featureIcon}>
-                  <Ionicons name="notifications-outline" size={14} color="#C49A6C" />
-                </View>
-                <Text style={styles.featureText}>Back in stock alerts</Text>
-              </View>
-              <View style={styles.feature}>
-                <View style={styles.featureIcon}>
-                  <Ionicons name="chatbubble-ellipses" size={14} color="#C49A6C" />
-                </View>
-                <Text style={styles.featureText}>Quick reordering</Text>
-              </View>
-            </View>
-          </View>
+            </Animated.View>
+          ))}
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -85,6 +133,36 @@ const styles = StyleSheet.create({
   backBtn: { padding: 4 },
   title: { fontWeight: '700', color: '#1a1a1a', letterSpacing: 0.3 },
   placeholder: { width: 32 },
+  grid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+  },
+  card: {
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    overflow: 'hidden',
+    marginBottom: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 10,
+    elevation: 2,
+  },
+  cardImage: { width: '100%', backgroundColor: '#f0f0f0' },
+  cardInfo: { padding: 12 },
+  cardName: { fontSize: 14, fontWeight: '600', color: '#1a1a1a', marginBottom: 2 },
+  cardPrice: { fontSize: 14, fontWeight: '700', color: '#1a1a1a', marginBottom: 10 },
+  cardActions: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  bagBtn: {
+    flex: 1,
+    backgroundColor: '#1a1a1a',
+    paddingVertical: 9,
+    borderRadius: 10,
+    alignItems: 'center',
+  },
+  bagBtnText: { color: '#fff', fontSize: 12, fontWeight: '700' },
+  heartBtn: { padding: 6 },
   emptySection: { flex: 1, paddingBottom: 32 },
   emptyImageWrapper: {
     width: '100%',
@@ -132,15 +210,4 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   browseBtnText: { color: '#fff', fontWeight: '700', fontSize: 14, letterSpacing: 0.3 },
-  featuresRow: { flexDirection: 'row', justifyContent: 'center', gap: 24 },
-  feature: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  featureIcon: {
-    width: 24,
-    height: 24,
-    borderRadius: 6,
-    backgroundColor: 'rgba(196,154,108,0.12)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  featureText: { fontSize: 12, color: '#666', fontWeight: '500' },
 });

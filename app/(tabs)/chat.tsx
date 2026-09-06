@@ -1,14 +1,59 @@
-import { View, Text, StyleSheet, Pressable, ScrollView, KeyboardAvoidingView, Platform, useWindowDimensions } from 'react-native';
+import { useRef, useState } from 'react';
+import { View, Text, StyleSheet, Pressable, ScrollView, KeyboardAvoidingView, Platform, useWindowDimensions, TextInput } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
 const suggestions = ['Size guide', 'Track order', 'Exchange policy', 'Style advice'];
 
+const cannedReplies: Record<string, string> = {
+  'size guide': 'Our pieces are one-size with adjustable closures for most bra sizes. If you are between sizes, we recommend sizing down for a snugger fit.',
+  'track order': 'Once your order ships, you will get a WhatsApp + email with a live tracking link. Orders arrive in 3-5 working days.',
+  'exchange policy': 'Easy 15-day exchanges on unworn pieces with tags intact. Start an exchange from My Orders — pickup is on us.',
+  'style advice': 'The Parna Balconette pairs beautifully with the Parna Cheeky for an everyday set; the corset is stunning on its own. Want a recommendation?',
+};
+
+type Message = { id: number; from: 'ai' | 'user'; text: string; time: string };
+
+const now = () =>
+  new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
+
 export default function ChatScreen() {
   const { width } = useWindowDimensions();
   const horizontalPadding = Math.max(12, Math.min(20, width * 0.04));
   const isLargeScreen = width > 768;
+
+  const [messages, setMessages] = useState<Message[]>([
+    {
+      id: 0,
+      from: 'ai',
+      text: 'Hi! Welcome to Olakh. I can help with sizing, recommendations, and orders.',
+      time: now(),
+    },
+  ]);
+  const [draft, setDraft] = useState('');
+  const scrollRef = useRef<ScrollView>(null);
+  const nextId = useRef(1);
+
+  const send = (raw?: string) => {
+    const text = (raw ?? draft).trim();
+    if (!text) return;
+    const userMsg: Message = { id: nextId.current++, from: 'user', text, time: now() };
+    setMessages((prev) => [...prev, userMsg]);
+    setDraft('');
+
+    const key = text.toLowerCase();
+    const replyText =
+      cannedReplies[key] ??
+      'Thanks for your message! A stylist will reply shortly — meanwhile, feel free to browse the new Parna collection.';
+
+    setTimeout(() => {
+      setMessages((prev) => [
+        ...prev,
+        { id: nextId.current++, from: 'ai', text: replyText, time: now() },
+      ]);
+    }, 600);
+  };
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -38,31 +83,40 @@ export default function ChatScreen() {
         style={styles.keyboardView}
       >
         <ScrollView
+          ref={scrollRef}
+          onContentSizeChange={() => scrollRef.current?.scrollToEnd({ animated: true })}
           style={styles.messagesScroll}
           contentContainerStyle={[styles.messages, { paddingHorizontal: horizontalPadding }]}
           showsVerticalScrollIndicator={false}
         >
-          {/* AI message with avatar */}
-          <View style={styles.messageRow}>
-            <View style={[styles.aiAvatar, { width: isLargeScreen ? 40 : 32, height: isLargeScreen ? 40 : 32, borderRadius: isLargeScreen ? 20 : 16 }]}>
-              <Ionicons name="chatbubble-ellipses" size={isLargeScreen ? 22 : 18} color="#fff" />
-            </View>
-            <View style={styles.bubbleGroup}>
-              <View style={[styles.bubble, { maxWidth: isLargeScreen ? '80%' : '85%' }]}>
-                <Text style={[styles.bubbleText, { fontSize: isLargeScreen ? 16 : 14 }]}>
-                  Hi! Welcome to Olakh. I can help with sizing, recommendations, and orders.
-                </Text>
+          {messages.map((m) =>
+            m.from === 'ai' ? (
+              <View key={m.id} style={styles.messageRow}>
+                <View style={[styles.aiAvatar, { width: isLargeScreen ? 40 : 32, height: isLargeScreen ? 40 : 32, borderRadius: isLargeScreen ? 20 : 16 }]}>
+                  <Ionicons name="chatbubble-ellipses" size={isLargeScreen ? 22 : 18} color="#fff" />
+                </View>
+                <View style={styles.bubbleGroup}>
+                  <View style={[styles.bubble, { maxWidth: isLargeScreen ? '80%' : '85%' }]}>
+                    <Text style={[styles.bubbleText, { fontSize: isLargeScreen ? 16 : 14 }]}>{m.text}</Text>
+                  </View>
+                  <Text style={styles.timeText}>{m.time}</Text>
+                </View>
               </View>
-              <Text style={styles.timeText}>Just now</Text>
-            </View>
-          </View>
+            ) : (
+              <View key={m.id} style={styles.userRow}>
+                <View style={[styles.userBubble, { maxWidth: isLargeScreen ? '80%' : '85%' }]}>
+                  <Text style={[styles.bubbleText, { fontSize: isLargeScreen ? 16 : 14 }]}>{m.text}</Text>
+                </View>
+              </View>
+            ),
+          )}
 
           {/* Suggestions */}
           <View style={styles.suggestionsSection}>
             <Text style={styles.suggestionsLabel}>Quick questions</Text>
             <View style={styles.suggestionsRow}>
               {suggestions.map((s) => (
-                <Pressable key={s} style={styles.suggestion} onPress={() => {}}>
+                <Pressable key={s} style={styles.suggestion} onPress={() => send(s)}>
                   <Text style={[styles.suggestionText, { fontSize: isLargeScreen ? 14 : 12 }]}>{s}</Text>
                 </Pressable>
               ))}
@@ -72,14 +126,22 @@ export default function ChatScreen() {
 
         {/* Input bar */}
         <View style={[styles.inputBar, { paddingHorizontal: horizontalPadding }]}>
-          <Pressable style={styles.input}>
+          <View style={styles.input}>
             <Ionicons name="chatbubble-outline" size={20} color="#999" style={styles.inputIcon} />
-            <Text style={styles.inputPlaceholder}>Type a message...</Text>
-          </Pressable>
-          <Pressable style={styles.attachBtn}>
-            <Ionicons name="attach-outline" size={20} color="#999" />
-          </Pressable>
-          <Pressable style={[styles.sendBtn, { width: isLargeScreen ? 46 : 40, height: isLargeScreen ? 46 : 40, borderRadius: isLargeScreen ? 23 : 20 }]}>
+            <TextInput
+              style={styles.inputField}
+              placeholder="Type a message..."
+              placeholderTextColor="#999"
+              value={draft}
+              onChangeText={setDraft}
+              onSubmitEditing={() => send()}
+              returnKeyType="send"
+            />
+          </View>
+          <Pressable
+            style={[styles.sendBtn, { width: isLargeScreen ? 46 : 40, height: isLargeScreen ? 46 : 40, borderRadius: isLargeScreen ? 23 : 20 }]}
+            onPress={() => send()}
+          >
             <Ionicons name="send" size={isLargeScreen ? 24 : 20} color="#fff" />
           </Pressable>
         </View>
@@ -120,6 +182,14 @@ const styles = StyleSheet.create({
   keyboardView: { flex: 1 },
   messagesScroll: { flex: 1 },
   messages: { paddingBottom: 8 },
+  userRow: { flexDirection: 'row', justifyContent: 'flex-end', marginBottom: 16 },
+  userBubble: {
+    backgroundColor: '#1a1a1a',
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: 16,
+    borderBottomRightRadius: 4,
+  },
   messageRow: { flexDirection: 'row', marginBottom: 16 },
   aiAvatar: {
     backgroundColor: '#C49A6C',
@@ -181,8 +251,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   inputIcon: { marginRight: 4 },
-  inputPlaceholder: { color: '#999', fontSize: 14, flex: 1 },
-  attachBtn: { padding: 8, marginRight: 4 },
+  inputField: { color: '#1a1a1a', fontSize: 14, flex: 1, paddingVertical: 0 },
   sendBtn: {
     backgroundColor: '#1a1a1a',
     alignItems: 'center',

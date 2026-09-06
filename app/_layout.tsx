@@ -1,5 +1,7 @@
 import { Stack } from 'expo-router';
 import { AuthProvider, useAuth } from '../context/AuthContext';
+import { ShopProvider } from '../context/ShopContext';
+import Toast from '../components/Toast';
 import { ActivityIndicator, View, StyleSheet } from 'react-native';
 import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
 
@@ -25,10 +27,10 @@ function RootLayoutContent() {
       <Stack.Screen name="(tabs)" options={{ headerShown: false, animation: 'fade' }} />
       <Stack.Screen name="auth/login" options={{ headerShown: false, presentation: 'modal', animation: 'slide_from_right' }} />
       <Stack.Screen name="auth/signup" options={{ headerShown: false, presentation: 'modal', animation: 'slide_from_right' }} />
-      <Stack.Screen name="product/[id]" options={{ headerShown: true, title: 'Product', animation: 'fade_from_bottom' }} />
-      <Stack.Screen name="wishlist" options={{ headerShown: true, title: 'Wishlist', animation: 'slide_from_right' }} />
-      <Stack.Screen name="notifications" options={{ headerShown: true, title: 'Notifications', animation: 'slide_from_right' }} />
-      <Stack.Screen name="checkout" options={{ headerShown: true, title: 'Checkout', animation: 'slide_from_right' }} />
+      <Stack.Screen name="product/[id]" options={{ headerShown: false, animation: 'fade_from_bottom' }} />
+      <Stack.Screen name="wishlist" options={{ headerShown: false, animation: 'slide_from_right' }} />
+      <Stack.Screen name="notifications" options={{ headerShown: false, animation: 'slide_from_right' }} />
+      <Stack.Screen name="checkout" options={{ headerShown: false, animation: 'slide_from_right' }} />
     </Stack>
   );
 }
@@ -36,7 +38,10 @@ function RootLayoutContent() {
 export default function RootLayout() {
   return (
     <AuthProvider>
-      <RootLayoutContent />
+      <ShopProvider>
+        <RootLayoutContent />
+        <Toast />
+      </ShopProvider>
     </AuthProvider>
   );
 }

@@ -1,12 +1,26 @@
-import { View, Text, StyleSheet, Pressable, ScrollView, useWindowDimensions } from 'react-native';
+import { View, Text, StyleSheet, Pressable, ScrollView, useWindowDimensions, Switch } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { useState } from 'react';
+
+type PrefKey = 'orderUpdates' | 'newArrivals' | 'offers' | 'loyalty' | 'push';
 
 export default function NotificationsScreen() {
   const { width } = useWindowDimensions();
   const horizontalPadding = Math.max(16, Math.min(24, width * 0.05));
   const isLargeScreen = width > 768;
+
+  const [prefs, setPrefs] = useState<Record<PrefKey, boolean>>({
+    orderUpdates: true,
+    newArrivals: true,
+    offers: false,
+    loyalty: false,
+    push: true,
+  });
+
+  const toggle = (key: PrefKey) =>
+    setPrefs((prev) => ({ ...prev, [key]: !prev[key] }));
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -20,7 +34,7 @@ export default function NotificationsScreen() {
 
       <ScrollView showsVerticalScrollIndicator={false}>
         <View style={[styles.section, { paddingHorizontal: horizontalPadding }]}>
-          <View style={[styles.sectionHeader, { paddingHorizontal: horizontalPadding }]}>
+          <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>Notification Preferences</Text>
             <Ionicons name="chevron-forward" size={18} color="#ccc" />
           </View>
@@ -33,10 +47,12 @@ export default function NotificationsScreen() {
                 <Text style={[styles.optionTitle, { fontSize: isLargeScreen ? 16 : 14 }]}>Order Updates</Text>
                 <Text style={styles.optionSubtitle}>Shipping, delivery, and returns</Text>
               </View>
-              <View style={styles.toggle}>
-                <View style={styles.toggleTrack} />
-                <View style={[styles.toggleThumb, { backgroundColor: '#1a1a1a' }]} />
-              </View>
+              <Switch
+                value={prefs.orderUpdates}
+                onValueChange={() => toggle('orderUpdates')}
+                trackColor={{ false: '#ddd', true: '#1a1a1a' }}
+                thumbColor="#fff"
+              />
             </View>
 
             <View style={styles.optionRow}>
@@ -47,10 +63,12 @@ export default function NotificationsScreen() {
                 <Text style={[styles.optionTitle, { fontSize: isLargeScreen ? 16 : 14 }]}>New Arrivals</Text>
                 <Text style={styles.optionSubtitle}>Fresh pieces from the collection</Text>
               </View>
-              <View style={styles.toggle}>
-                <View style={styles.toggleTrack} />
-                <View style={[styles.toggleThumb, { backgroundColor: '#1a1a1a' }]} />
-              </View>
+              <Switch
+                value={prefs.newArrivals}
+                onValueChange={() => toggle('newArrivals')}
+                trackColor={{ false: '#ddd', true: '#1a1a1a' }}
+                thumbColor="#fff"
+              />
             </View>
 
             <View style={styles.optionRow}>
@@ -61,10 +79,12 @@ export default function NotificationsScreen() {
                 <Text style={[styles.optionTitle, { fontSize: isLargeScreen ? 16 : 14 }]}>Exclusive Offers</Text>
                 <Text style={styles.optionSubtitle}>Promotions, discounts & surprises</Text>
               </View>
-              <View style={styles.toggle}>
-                <View style={styles.toggleTrack} />
-                <View style={[styles.toggleThumb, { backgroundColor: '#1a1a1a' }]} />
-              </View>
+              <Switch
+                value={prefs.offers}
+                onValueChange={() => toggle('offers')}
+                trackColor={{ false: '#ddd', true: '#1a1a1a' }}
+                thumbColor="#fff"
+              />
             </View>
 
             <View style={styles.optionRow}>
@@ -75,16 +95,18 @@ export default function NotificationsScreen() {
                 <Text style={[styles.optionTitle, { fontSize: isLargeScreen ? 16 : 14 }]}>Loyalty Program</Text>
                 <Text style={styles.optionSubtitle}>Rewards, points, and perks</Text>
               </View>
-              <View style={styles.toggle}>
-                <View style={styles.toggleTrack} />
-                <View style={styles.toggleThumbDisabled} />
-              </View>
+              <Switch
+                value={prefs.loyalty}
+                onValueChange={() => toggle('loyalty')}
+                trackColor={{ false: '#ddd', true: '#1a1a1a' }}
+                thumbColor="#fff"
+              />
             </View>
           </View>
         </View>
 
         <View style={[styles.section, { paddingHorizontal: horizontalPadding }]}>
-          <View style={[styles.sectionHeader, { paddingHorizontal: horizontalPadding }]}>
+          <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>Channels</Text>
             <Ionicons name="chevron-forward" size={18} color="#ccc" />
           </View>
@@ -97,10 +119,13 @@ export default function NotificationsScreen() {
                 <Text style={[styles.optionTitle, { fontSize: isLargeScreen ? 16 : 14 }]}>Email</Text>
                 <Text style={styles.optionSubtitle}>newsletter@olakh.com</Text>
               </View>
-              <View style={[styles.toggle, styles.toggleDisabled]}>
-                <View style={[styles.toggleTrack, { backgroundColor: '#ddd' }]} />
-                <View style={[styles.toggleThumb, { backgroundColor: '#bbb' }]} />
-              </View>
+              <Switch
+                value={false}
+                onValueChange={() => {}}
+                trackColor={{ false: '#ddd', true: '#1a1a1a' }}
+                thumbColor="#fff"
+                style={styles.toggleDisabled}
+              />
             </View>
 
             <View style={styles.optionRow}>
@@ -111,10 +136,12 @@ export default function NotificationsScreen() {
                 <Text style={[styles.optionTitle, { fontSize: isLargeScreen ? 16 : 14 }]}>Push Notifications</Text>
                 <Text style={styles.optionSubtitle}>On your device</Text>
               </View>
-              <View style={[styles.toggle, styles.toggleOn]}>
-                <View style={[styles.toggleTrack, { backgroundColor: '#2ecc71' }]} />
-                <View style={[styles.toggleThumb, { backgroundColor: '#fff' }]} />
-              </View>
+              <Switch
+                value={prefs.push}
+                onValueChange={() => toggle('push')}
+                trackColor={{ false: '#ddd', true: '#1a1a1a' }}
+                thumbColor="#fff"
+              />
             </View>
           </View>
         </View>
@@ -141,8 +168,6 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#eee',
   },
   sectionTitle: { fontSize: 12, fontWeight: '700', color: '#999', textTransform: 'uppercase', letterSpacing: 0.5 },
   optionsList: {
@@ -176,24 +201,5 @@ const styles = StyleSheet.create({
   optionText: { flex: 1 },
   optionTitle: { fontWeight: '600', color: '#1a1a1a', marginBottom: 2 },
   optionSubtitle: { fontSize: 12, color: '#999' },
-  toggle: { width: 40, height: 24, borderRadius: 12, padding: 2, justifyContent: 'center', alignItems: 'center' },
-  toggleTrack: { width: '100%', height: '100%', borderRadius: 10, backgroundColor: '#ddd' },
-  toggleThumb: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    backgroundColor: '#1a1a1a',
-    position: 'absolute',
-    right: 2,
-  },
-  toggleThumbDisabled: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    backgroundColor: '#bbb',
-    position: 'absolute',
-    right: 2,
-  },
   toggleDisabled: { opacity: 0.5 },
-  toggleOn: { paddingLeft: 2, paddingRight: 0 },
 });

@@ -64,7 +64,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       id: `user_${email.split('@')[0]}`,
       name: 'User',
       email,
-      avatar: 'https://images.unsplash.com/photo-1534524136320-5b4e6b3e9b3a?w=200&h=200&fit=crop',
+      avatar: '',
     },
     token: `token_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
     createdAt: new Date().toISOString(),

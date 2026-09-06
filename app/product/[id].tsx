@@ -1,9 +1,12 @@
-import { View, Text, StyleSheet, Pressable, Image, useWindowDimensions } from 'react-native';
+import { View, Text, StyleSheet, Pressable, Image, ScrollView, useWindowDimensions } from 'react-native';
+import { useState } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { products } from '../../services/products';
+import { shopifyImage } from '../../services/images';
+import { useShop } from '../../context/ShopContext';
 import Animated, {
   FadeInDown,
   FadeInUp,
@@ -22,6 +25,20 @@ export default function ProductDetail() {
   const isLargeScreen = width > 768;
 
   const product = products.find((p) => p.id === id);
+  const [activeImage, setActiveImage] = useState(0);
+  const [selectedSize, setSelectedSize] = useState<string | null>(null);
+  const { addToCart, toggleWishlist, isWishlisted, showToast } = useShop();
+  const wishlisted = product ? isWishlisted(product.id) : false;
+
+  const handleAddToCart = () => {
+    if (!product) return;
+    if (!selectedSize) {
+      showToast('Please select a size');
+      return;
+    }
+    addToCart(product, selectedSize);
+    showToast('Added to bag');
+  };
 
   // Animation for the "Add to Cart" button
   const cartScale = useSharedValue(1);
@@ -56,9 +73,21 @@ export default function ProductDetail() {
       <View style={[styles.imageSection, { height: imageSectionHeight }]}>
         <Animated.Image
           sharedTransitionTag={`product-image-${product.id}`}
-          source={{ uri: product.image }}
+          source={{ uri: shopifyImage(product.images?.[activeImage] || product.image, { width: 1200 }) }}
           style={styles.image}
         />
+        {(product.images?.length ?? 0) > 1 && (
+          <View style={[styles.thumbRow, { paddingHorizontal: horizontalPadding }]}>
+            {product.images.map((uri, index) => (
+              <Pressable key={uri} onPress={() => setActiveImage(index)}>
+                <Image
+                  source={{ uri: shopifyImage(uri, { width: 160, height: 200, crop: true }) }}
+                  style={[styles.thumb, index === activeImage && styles.thumbActive]}
+                />
+              </Pressable>
+            ))}
+          </View>
+        )}
         <LinearGradient
           colors={['rgba(0,0,0,0)', 'rgba(0,0,0,0.02)']}
           style={styles.imageFade}
@@ -73,15 +102,30 @@ export default function ProductDetail() {
             <Ionicons name="arrow-back" size={22} color="#1a1a1a" />
           </Pressable>
           <Animated.View entering={SlideInRight.delay(400).duration(500)}>
-            <Pressable style={styles.wishlistBtn}>
-              <Ionicons name="heart-outline" size={22} color="#C49A6C" />
+            <Pressable
+              style={styles.wishlistBtn}
+              onPress={() => {
+                if (!product) return;
+                toggleWishlist(product);
+                showToast(wishlisted ? 'Removed from wishlist' : 'Saved to wishlist');
+              }}
+            >
+              <Ionicons
+                name={wishlisted ? 'heart' : 'heart-outline'}
+                size={22}
+                color="#C49A6C"
+              />
             </Pressable>
           </Animated.View>
         </Animated.View>
       </View>
 
       {/* Details section */}
-      <View style={[styles.details, { paddingHorizontal: horizontalPadding }]}>
+      <ScrollView
+        style={[styles.details, { paddingHorizontal: horizontalPadding }]}
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.detailsContent}
+      >
         <Animated.Text
           sharedTransitionTag={`product-name-${product.id}`}
           entering={FadeInDown.delay(200).duration(600)}
@@ -95,7 +139,7 @@ export default function ProductDetail() {
             sharedTransitionTag={`product-price-${product.id}`}
             style={[styles.price, { fontSize: isLargeScreen ? 28 : 24 }]}
           >
-            ৳{product.price.toLocaleString('en-IN')}
+            ₹{product.price.toLocaleString('en-IN')}
           </Animated.Text>
           <View style={styles.stockBadge}>
             <Ionicons name="checkmark-circle" size={14} color="#2ecc71" />
@@ -112,23 +156,37 @@ export default function ProductDetail() {
         <Animated.View entering={FadeInDown.delay(600).duration(600)} style={styles.sizeSection}>
           <Text style={styles.sizeLabel}>Size</Text>
           <View style={styles.sizeOptions}>
-            {['S', 'M', 'L'].map((size, index) => (
-              <Animated.View
-                key={size}
-                entering={SlideInLeft.delay(650 + index * 100).duration(500)}
-              >
-                <Pressable style={styles.sizeBtn}>
-                  <Text style={[styles.sizeText, { fontSize: isLargeScreen ? 16 : 14 }]}>{size}</Text>
-                </Pressable>
-              </Animated.View>
-            ))}
+            {['S', 'M', 'L'].map((size, index) => {
+              const active = selectedSize === size;
+              return (
+                <Animated.View
+                  key={size}
+                  entering={SlideInLeft.delay(650 + index * 100).duration(500)}
+                >
+                  <Pressable
+                    style={[styles.sizeBtn, active && styles.sizeBtnActive]}
+                    onPress={() => setSelectedSize(size)}
+                  >
+                    <Text
+                      style={[
+                        styles.sizeText,
+                        { fontSize: isLargeScreen ? 16 : 14 },
+                        active && styles.sizeTextActive,
+                      ]}
+                    >
+                      {size}
+                    </Text>
+                  </Pressable>
+                </Animated.View>
+              );
+            })}
           </View>
         </Animated.View>
 
         <Animated.View entering={FadeInUp.delay(900).duration(600)} style={cartAnimatedStyle}>
           <Pressable
             style={styles.addToCart}
-            onPress={() => router.push('/cart')}
+            onPress={handleAddToCart}
             onPressIn={handleCartPressIn}
             onPressOut={handleCartPressOut}
           >
@@ -139,9 +197,9 @@ export default function ProductDetail() {
 
         <Animated.View entering={FadeInDown.delay(1000).duration(600)} style={styles.footer}>
           <Ionicons name="shield-checkmark" size={14} color="#2ecc71" />
-          <Text style={styles.footerText}>Free shipping on orders above ৳999</Text>
+          <Text style={styles.footerText}>Free shipping on orders above ₹999</Text>
         </Animated.View>
-      </View>
+      </ScrollView>
     </SafeAreaView>
   );
 }
@@ -154,6 +212,23 @@ const styles = StyleSheet.create({
   backText: { color: '#1a1a1a', fontSize: 14, fontWeight: '600' },
   imageSection: { overflow: 'hidden' },
   image: { width: '100%', height: '100%' },
+  thumbRow: {
+    position: 'absolute',
+    bottom: 12,
+    left: 0,
+    right: 0,
+    flexDirection: 'row',
+    gap: 8,
+  },
+  thumb: {
+    width: 44,
+    height: 56,
+    borderRadius: 8,
+    borderWidth: 2,
+    borderColor: 'rgba(255,255,255,0.55)',
+    backgroundColor: '#fff',
+  },
+  thumbActive: { borderColor: '#1a1a1a' },
   imageFade: {
     position: 'absolute',
     top: 0,
@@ -181,13 +256,12 @@ const styles = StyleSheet.create({
   },
   details: {
     flex: 1,
-    paddingTop: 20,
-    paddingBottom: 16,
     backgroundColor: '#fff',
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     marginTop: -12,
   },
+  detailsContent: { paddingTop: 20, paddingBottom: 24 },
   name: { fontWeight: '700', color: '#1a1a1a', marginBottom: 10, letterSpacing: -0.2 },
   priceRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 },
   price: { fontWeight: '700', color: '#1a1a1a' },
@@ -199,7 +273,9 @@ const styles = StyleSheet.create({
   sizeLabel: { fontSize: 12, fontWeight: '600', color: '#999', marginBottom: 8, textTransform: 'uppercase', letterSpacing: 0.5 },
   sizeOptions: { flexDirection: 'row', gap: 8 },
   sizeBtn: { backgroundColor: '#f5f5f5', paddingHorizontal: 16, paddingVertical: 12, borderRadius: 8 },
+  sizeBtnActive: { backgroundColor: '#1a1a1a' },
   sizeText: { fontWeight: '600', color: '#1a1a1a' },
+  sizeTextActive: { color: '#fff' },
   addToCart: {
     backgroundColor: '#1a1a1a',
     paddingVertical: 16,

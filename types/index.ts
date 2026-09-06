@@ -3,8 +3,10 @@ export interface Product {
   name: string;
   price: number;
   image: string;
+  /** Full set of the product's images from the store, in display order. */
+  images: string[];
   description: string;
-  category: string;
+  category: 'bras' | 'bodysuits' | 'bottoms' | 'corsets';
 }
 
 export interface CartItem {
