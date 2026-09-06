@@ -1,6 +1,7 @@
-import { View, Text, Image, StyleSheet, Pressable } from 'react-native';
+import { View, Text, Image, StyleSheet, Pressable, useWindowDimensions } from 'react-native';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import Animated, { FadeInUp, useAnimatedStyle, useSharedValue, withSpring, withTiming } from 'react-native-reanimated';
 
 type ProductCardProps = {
   product: {
@@ -9,23 +10,62 @@ type ProductCardProps = {
     price: number;
     image: string;
   };
+  cardWidth?: number;
 };
 
-export default function ProductCard({ product }: ProductCardProps) {
+export default function ProductCard({ product, cardWidth }: ProductCardProps) {
+  const { width } = useWindowDimensions();
+  const imageHeight = Math.min(190, Math.max(140, (cardWidth || (width - 32) / 2) * 1.6));
+
+  const scale = useSharedValue(1);
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: scale.value }],
+  }));
+
+  const handlePressIn = () => {
+    scale.value = withSpring(0.96, { damping: 15 });
+  };
+
+  const handlePressOut = () => {
+    scale.value = withSpring(1, { damping: 15 });
+  };
+
   return (
-    <Pressable
-      style={styles.card}
-      onPress={() => router.push(`/product/${product.id}`)}
+    <Animated.View
+      entering={FadeInUp.duration(600)}
+      style={[animatedStyle, { width: cardWidth || '48%' }]}
     >
-      <Image source={{ uri: product.image }} style={styles.image} />
-      <View style={styles.info}>
-        <Text style={styles.name} numberOfLines={1}>{product.name}</Text>
-        <Text style={styles.price}>₹{product.price.toLocaleString('en-IN')}</Text>
-        <Pressable style={styles.wishlist} onPress={() => {}}>
-          <Ionicons name="heart-outline" size={20} color="#C49A6C" />
-        </Pressable>
-      </View>
-    </Pressable>
+      <Pressable
+        style={styles.card}
+        onPress={() => router.push(`/product/${product.id}`)}
+        onPressIn={handlePressIn}
+        onPressOut={handlePressOut}
+      >
+        <Animated.Image
+          sharedTransitionTag={`product-image-${product.id}`}
+          source={{ uri: product.image }}
+          style={[styles.image, { height: imageHeight }]}
+        />
+        <View style={styles.info}>
+          <Animated.Text
+            sharedTransitionTag={`product-name-${product.id}`}
+            style={styles.name}
+            numberOfLines={1}
+          >
+            {product.name}
+          </Animated.Text>
+          <Animated.Text
+            sharedTransitionTag={`product-price-${product.id}`}
+            style={styles.price}
+          >
+            ৳{product.price.toLocaleString('en-IN')}
+          </Animated.Text>
+          <Pressable style={styles.wishlist} onPress={() => {}}>
+            <Ionicons name="heart-outline" size={20} color="#C49A6C" />
+          </Pressable>
+        </View>
+      </Pressable>
+    </Animated.View>
   );
 }
 
@@ -39,10 +79,9 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.06,
     shadowRadius: 10,
     elevation: 2,
-    width: '48%',
     marginBottom: 12,
   },
-  image: { width: '100%', height: 190 },
+  image: { width: '100%' },
   info: { padding: 12, position: 'relative' },
   name: { fontSize: 14, fontWeight: '600', color: '#1a1a1a', marginBottom: 4, textAlign: 'left' },
   price: { fontSize: 15, fontWeight: '700', color: '#1a1a1a' },

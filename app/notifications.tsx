@@ -1,32 +1,36 @@
-import { View, Text, StyleSheet, Pressable, ScrollView, Image } from 'react-native';
+import { View, Text, StyleSheet, Pressable, ScrollView, useWindowDimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
 export default function NotificationsScreen() {
+  const { width } = useWindowDimensions();
+  const horizontalPadding = Math.max(16, Math.min(24, width * 0.05));
+  const isLargeScreen = width > 768;
+
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
-      <View style={styles.header}>
+      <View style={[styles.header, { paddingHorizontal: horizontalPadding }]}>
         <Pressable onPress={() => router.back()} style={styles.backBtn}>
           <Ionicons name="arrow-back" size={22} color="#1a1a1a" />
         </Pressable>
-        <Text style={styles.title}>Notifications</Text>
+        <Text style={[styles.title, { fontSize: isLargeScreen ? 24 : 22 }]}>Notifications</Text>
         <View style={styles.placeholder} />
       </View>
 
       <ScrollView showsVerticalScrollIndicator={false}>
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
+        <View style={[styles.section, { paddingHorizontal: horizontalPadding }]}>
+          <View style={[styles.sectionHeader, { paddingHorizontal: horizontalPadding }]}>
             <Text style={styles.sectionTitle}>Notification Preferences</Text>
             <Ionicons name="chevron-forward" size={18} color="#ccc" />
           </View>
           <View style={styles.optionsList}>
             <View style={styles.optionRow}>
               <View style={styles.optionIcon}>
-                <Ionicons name="car-outline" size={18} color="#C49A6C" />
+                <Ionicons name="car-outline" size={isLargeScreen ? 22 : 18} color="#C49A6C" />
               </View>
               <View style={styles.optionText}>
-                <Text style={styles.optionTitle}>Order Updates</Text>
+                <Text style={[styles.optionTitle, { fontSize: isLargeScreen ? 16 : 14 }]}>Order Updates</Text>
                 <Text style={styles.optionSubtitle}>Shipping, delivery, and returns</Text>
               </View>
               <View style={styles.toggle}>
@@ -37,10 +41,10 @@ export default function NotificationsScreen() {
 
             <View style={styles.optionRow}>
               <View style={styles.optionIcon}>
-                <Ionicons name="leaf" size={18} color="#C49A6C" />
+                <Ionicons name="leaf" size={isLargeScreen ? 22 : 18} color="#C49A6C" />
               </View>
               <View style={styles.optionText}>
-                <Text style={styles.optionTitle}>New Arrivals</Text>
+                <Text style={[styles.optionTitle, { fontSize: isLargeScreen ? 16 : 14 }]}>New Arrivals</Text>
                 <Text style={styles.optionSubtitle}>Fresh pieces from the collection</Text>
               </View>
               <View style={styles.toggle}>
@@ -51,10 +55,10 @@ export default function NotificationsScreen() {
 
             <View style={styles.optionRow}>
               <View style={styles.optionIcon}>
-                <Ionicons name="rose" size={18} color="#C49A6C" />
+                <Ionicons name="rose" size={isLargeScreen ? 22 : 18} color="#C49A6C" />
               </View>
               <View style={styles.optionText}>
-                <Text style={styles.optionTitle}>Exclusive Offers</Text>
+                <Text style={[styles.optionTitle, { fontSize: isLargeScreen ? 16 : 14 }]}>Exclusive Offers</Text>
                 <Text style={styles.optionSubtitle}>Promotions, discounts & surprises</Text>
               </View>
               <View style={styles.toggle}>
@@ -65,10 +69,10 @@ export default function NotificationsScreen() {
 
             <View style={styles.optionRow}>
               <View style={styles.optionIcon}>
-                <Ionicons name="star" size={18} color="#C49A6C" />
+                <Ionicons name="star" size={isLargeScreen ? 22 : 18} color="#C49A6C" />
               </View>
               <View style={styles.optionText}>
-                <Text style={styles.optionTitle}>Loyalty Program</Text>
+                <Text style={[styles.optionTitle, { fontSize: isLargeScreen ? 16 : 14 }]}>Loyalty Program</Text>
                 <Text style={styles.optionSubtitle}>Rewards, points, and perks</Text>
               </View>
               <View style={styles.toggle}>
@@ -79,18 +83,18 @@ export default function NotificationsScreen() {
           </View>
         </View>
 
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
+        <View style={[styles.section, { paddingHorizontal: horizontalPadding }]}>
+          <View style={[styles.sectionHeader, { paddingHorizontal: horizontalPadding }]}>
             <Text style={styles.sectionTitle}>Channels</Text>
             <Ionicons name="chevron-forward" size={18} color="#ccc" />
           </View>
           <View style={styles.optionsList}>
             <View style={styles.optionRow}>
               <View style={styles.optionIcon}>
-                <Ionicons name="mail-open" size={18} color="#C49A6C" />
+                <Ionicons name="mail-open" size={isLargeScreen ? 22 : 18} color="#C49A6C" />
               </View>
               <View style={styles.optionText}>
-                <Text style={styles.optionTitle}>Email</Text>
+                <Text style={[styles.optionTitle, { fontSize: isLargeScreen ? 16 : 14 }]}>Email</Text>
                 <Text style={styles.optionSubtitle}>newsletter@olakh.com</Text>
               </View>
               <View style={[styles.toggle, styles.toggleDisabled]}>
@@ -101,10 +105,10 @@ export default function NotificationsScreen() {
 
             <View style={styles.optionRow}>
               <View style={styles.optionIcon}>
-                <Ionicons name="notifications-outline" size={18} color="#C49A6C" />
+                <Ionicons name="notifications-outline" size={isLargeScreen ? 22 : 18} color="#C49A6C" />
               </View>
               <View style={styles.optionText}>
-                <Text style={styles.optionTitle}>Push Notifications</Text>
+                <Text style={[styles.optionTitle, { fontSize: isLargeScreen ? 16 : 14 }]}>Push Notifications</Text>
                 <Text style={styles.optionSubtitle}>On your device</Text>
               </View>
               <View style={[styles.toggle, styles.toggleOn]}>
@@ -125,19 +129,17 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 20,
     paddingVertical: 16,
     backgroundColor: '#fafafa',
   },
   backBtn: { padding: 4 },
-  title: { fontSize: 22, fontWeight: '700', color: '#1a1a1a', letterSpacing: 0.3 },
+  title: { fontWeight: '700', color: '#1a1a1a', letterSpacing: 0.3 },
   placeholder: { width: 32 },
   section: { marginTop: 16 },
   sectionHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 20,
     paddingVertical: 12,
     borderBottomWidth: 1,
     borderBottomColor: '#eee',
@@ -172,7 +174,7 @@ const styles = StyleSheet.create({
     marginRight: 12,
   },
   optionText: { flex: 1 },
-  optionTitle: { fontSize: 14, fontWeight: '600', color: '#1a1a1a', marginBottom: 2 },
+  optionTitle: { fontWeight: '600', color: '#1a1a1a', marginBottom: 2 },
   optionSubtitle: { fontSize: 12, color: '#999' },
   toggle: { width: 40, height: 24, borderRadius: 12, padding: 2, justifyContent: 'center', alignItems: 'center' },
   toggleTrack: { width: '100%', height: '100%', borderRadius: 10, backgroundColor: '#ddd' },
