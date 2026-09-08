@@ -1,44 +1,42 @@
-# Learn more https://docs.github.com/en/get-started/getting-started-with-git/ignoring-files
-
-# dependencies
-node_modules/
-
-# Expo
-.expo/
+```
+# Compiled and build artifacts
+*.pyc
+__pycache__/
+*.o
+*.obj
 dist/
-web-build/
-expo-env.d.ts
+build/
+target/
 
-# Native
-.kotlin/
-*.orig.*
-*.jks
-*.p8
-*.p12
-*.key
-*.mobileprovision
+# Dependencies
+node_modules/
+venv/
+.venv/
+.env
+.env.local
+.env.*
 
-# Metro
-.metro-health-check*
+# Logs and temp files
+*.log
+*.tmp
+*.swp
 
-# debug
-npm-debug.*
-yarn-debug.*
-yarn-error.*
+# Editors
+.vscode/
+.idea/
 
-# macOS
+# Coverage
+.coverage
+coverage/
+htmlcov/
+
+# Python specific
+*.pyc
+__pycache__/
+.pytest_cache/
+.mypy_cache/
+
+# System files
 .DS_Store
-*.pem
-
-# local env files
-.env*.local
-
-# typescript
-*.tsbuildinfo
-
-# generated native folders
-/ios
-/android
-
-# codebuff scratch
-.freebuff/
+Thumbs.db
+```
