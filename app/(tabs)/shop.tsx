@@ -8,6 +8,13 @@ import { shopifyImage } from '../../services/images';
 import ProductCard from '../../components/ProductCard';
 import { useShop } from '../../context/ShopContext';
 
+/**
+ * Hick's Law Implementation for Shop Screen:
+ * - Single primary action: Browse and filter products
+ * - Visual hierarchy: Active filter stands out significantly
+ * - Progressive disclosure: Only 5 category filters shown (cognitive limit)
+ * - Contextual relevance: Filters directly relate to current shopping context
+ */
 const FILTERS = [
   { id: 'all' as const, label: 'All' },
   { id: 'bras' as const, label: 'Bras' },
@@ -67,9 +74,9 @@ export default function ShopScreen() {
             <Pressable
               key={f.id}
               onPress={() => setFilter(f.id)}
-              style={[styles.categoryChip, active && { backgroundColor: '#1a1a1a' }]}
+              style={[styles.categoryChip, active && styles.categoryChipActive]}
             >
-              <Text style={[styles.categoryChipLabel, active && { color: '#fff' }]}>
+              <Text style={[styles.categoryChipLabel, active && styles.categoryChipLabelActive]}>
                 {f.label}
               </Text>
             </Pressable>
@@ -149,8 +156,28 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     borderWidth: 1,
     borderColor: '#e5e5e5',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.03,
+    shadowRadius: 2,
+    elevation: 1,
+  },
+  // Hick's Law: Active filter stands out significantly (visual hierarchy)
+  categoryChipActive: {
+    backgroundColor: '#1a1a1a',
+    borderColor: '#1a1a1a',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+    elevation: 3,
   },
   categoryChipLabel: { fontSize: 13, fontWeight: '500', color: '#1a1a1a' },
+  // Hick's Law: Active label has high contrast for clear visual distinction
+  categoryChipLabelActive: { 
+    color: '#fff',
+    fontWeight: '600',
+  },
   productList: { flex: 1 },
   productGrid: { paddingVertical: 4, paddingBottom: 24 },
   grid: {

@@ -5,12 +5,21 @@ import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../context/AuthContext';
 import Animated, { FadeInDown, FadeInRight } from 'react-native-reanimated';
 
+/**
+ * Hick's Law Implementation:
+ * - Single primary action per screen (profile management)
+ * - Core user actions prioritized (Orders, Wishlist first)
+ * - Secondary options visually grouped and less prominent
+ * - Settings hidden in profile context (not a main tab)
+ */
 const menuItems = [
-  { id: 'orders', label: 'My Orders', icon: 'receipt-outline' as const, color: '#1a1a1a' },
-  { id: 'wishlist', label: 'Wishlist', icon: 'heart-outline' as const, color: '#C49A6C' },
-  { id: 'addresses', label: 'Saved Addresses', icon: 'location-outline' as const, color: '#1a1a1a' },
-  { id: 'settings', label: 'Settings', icon: 'settings-outline' as const, color: '#1a1a1a' },
-  { id: 'help', label: 'Help & Support', icon: 'help-outline' as const, color: '#1a1a1a' },
+  // Primary actions - most frequently used
+  { id: 'orders', label: 'My Orders', icon: 'receipt-outline' as const, color: '#1a1a1a', priority: 'primary' },
+  { id: 'wishlist', label: 'Wishlist', icon: 'heart-outline' as const, color: '#C49A6C', priority: 'primary' },
+  // Secondary actions - less frequent
+  { id: 'addresses', label: 'Saved Addresses', icon: 'location-outline' as const, color: '#1a1a1a', priority: 'secondary' },
+  { id: 'settings', label: 'Settings', icon: 'settings-outline' as const, color: '#1a1a1a', priority: 'secondary' },
+  { id: 'help', label: 'Help & Support', icon: 'help-outline' as const, color: '#1a1a1a', priority: 'secondary' },
 ];
 
 export default function AccountScreen() {
@@ -75,21 +84,41 @@ export default function AccountScreen() {
           )}
         </View>
 
+        {/* Hick's Law: Progressive disclosure - primary actions first, secondary grouped */}
         <Animated.View entering={FadeInRight.delay(700).duration(600)} style={[styles.menu, { marginHorizontal: horizontalPadding }]}>
-          {menuItems.map((item, index) => (
-            <Animated.View
-              key={item.id}
-              entering={FadeInRight.delay(750 + index * 100).duration(500)}
-            >
-              <Pressable style={styles.menuItem} onPress={() => handleMenu(item.id)}>
-                <View style={styles.menuIconWrapper}>
-                  <Ionicons name={item.icon} size={isLargeScreen ? 26 : 22} color={item.color} />
-                </View>
-                <Text style={[styles.menuLabel, { fontSize: isLargeScreen ? 18 : 15 }]}>{item.label}</Text>
-                <Ionicons name="chevron-forward" size={isLargeScreen ? 22 : 18} color="#ccc" />
-              </Pressable>
-            </Animated.View>
-          ))}
+          {menuItems.map((item, index) => {
+            const isPrimary = item.priority === 'primary';
+            const isSecondaryStart = !isPrimary && menuItems[index - 1]?.priority === 'primary';
+            return (
+              <Animated.View
+                key={item.id}
+                entering={FadeInRight.delay(750 + index * 100).duration(500)}
+              >
+                {/* Add section divider before secondary items per Hick's Law visual hierarchy */}
+                {isSecondaryStart && <View style={styles.menuSectionDivider} />}
+                <Pressable 
+                  style={[
+                    styles.menuItem, 
+                    !isPrimary && styles.menuItemSecondary
+                  ]} 
+                  onPress={() => handleMenu(item.id)}
+                >
+                  <View style={[
+                    styles.menuIconWrapper,
+                    !isPrimary && styles.menuIconWrapperSecondary
+                  ]}>
+                    <Ionicons name={item.icon} size={isLargeScreen ? 26 : 22} color={item.color} />
+                  </View>
+                  <Text style={[
+                    styles.menuLabel, 
+                    { fontSize: isLargeScreen ? 18 : 15 },
+                    !isPrimary && styles.menuLabelSecondary
+                  ]}>{item.label}</Text>
+                  <Ionicons name="chevron-forward" size={isLargeScreen ? 22 : 18} color="#ccc" />
+                </Pressable>
+              </Animated.View>
+            );
+          })}
         </Animated.View>
       </ScrollView>
     </SafeAreaView>
@@ -167,4 +196,21 @@ const styles = StyleSheet.create({
     marginRight: 14,
   },
   menuLabel: { flex: 1, fontWeight: '500', color: '#1a1a1a' },
+  // Hick's Law: Visual hierarchy for secondary items
+  menuItemSecondary: {
+    paddingVertical: 12,
+    backgroundColor: '#fafafa',
+  },
+  menuIconWrapperSecondary: {
+    backgroundColor: '#f0f0f0',
+  },
+  menuLabelSecondary: {
+    color: '#666',
+    fontWeight: '400',
+  },
+  menuSectionDivider: {
+    height: 1,
+    backgroundColor: '#e5e5e5',
+    marginVertical: 8,
+  },
 });
